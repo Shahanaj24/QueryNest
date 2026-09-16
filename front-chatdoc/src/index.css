@@ -1,0 +1,19 @@
+/*
+ * Base stylesheet.
+ *
+ * What existed here: a body rule with `overflow: hidden`, which suited the old
+ * single-screen layout but would clip the scrollable register form and the
+ * documents list. Layout rules now live in theme.js (GlobalStyle) so there is
+ * one source of truth; this file only sets what must apply before React mounts.
+ */
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+}

@@ -1,0 +1,18 @@
+# --- Original dependencies (unchanged) ---
+fastapi
+uvicorn
+python-multipart
+python-dotenv
+google-genai
+langchain
+langchain-community
+langchain-huggingface
+sentence-transformers
+faiss-cpu
+pypdf
+
+# --- Added for authentication and persistence ---
+motor              # async MongoDB driver (brings in pymongo)
+bcrypt             # password hashing
+PyJWT              # access tokens
+pydantic[email]    # EmailStr validation
