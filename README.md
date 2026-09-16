@@ -1,199 +1,471 @@
-# Chat-with-Your-Documents
+QueryNest is an authenticated, multi-user AI document Q&A platform that lets users upload PDF documents, ask questions in natural language, and receive answers grounded in their own documents with page-level citations.
 
-An authenticated, multi-user AI document Q&A platform. Upload PDFs, ask questions
-in natural language, and get answers grounded in your own documents with page
-citations — with each user's documents and conversations fully isolated from
-every other user's.
+Each user's documents, vector indexes, and conversations are isolated from every other user.
 
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![React](https://img.shields.io/badge/React-Frontend-blue)](https://reactjs.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-Backend-blue)](https://fastapi.tiangolo.com/)
+What is QueryNest?
 
-![Chat-with-Your-Documents Screenshot](images/app.png)
+QueryNest started as a single-user Retrieval-Augmented Generation (RAG) demo with one global vector store and no authentication.
 
-## What this is
+It has been upgraded into a multi-user document intelligence platform with:
 
-This started as a single-user RAG demo: one page, one global vector store, no
-accounts. It has been upgraded into a multi-tenant application with registration
-and login, per-user document libraries, and persistent multi-conversation chat
-history — without replacing the retrieval pipeline that already worked.
+User registration and login
 
-The RAG chain is unchanged in mechanism: `PyPDFLoader` → `CharacterTextSplitter(1000, 200)`
-→ `HuggingFaceEmbeddings(all-mpnet-base-v2)` → `FAISS` → `similarity_search` →
-Gemini. What changed is the architecture around it. `CHANGES.md` documents every
-modified file and the reasoning behind each change.
+Secure JWT-based authentication
 
-## How user isolation works
+Per-user document libraries
 
-This is the design decision worth understanding first, because it is the one the
-rest of the security model rests on.
+User-isolated FAISS vector indexes
 
-Each user gets a **separate FAISS index** at `faiss_store/{userId}/`, rather than
-one shared index filtered by a metadata field at query time. The user id always
-comes from the verified JWT, never from a request body or URL parameter.
+Persistent multi-conversation chat history
 
-The reason is that metadata filtering makes isolation *conditional* — every
-retrieval path has to remember to apply the filter, and one missed filter leaks
-another user's document content into an answer. Separate indexes make it
-*structural*: another user's vectors are never loaded into the search at all, so
-there is no code path that can return them.
+PDF upload and processing
 
-The same principle applies in MongoDB. Ownership is enforced inside the query
-(`{"_id": id, "userId": user_id}`) rather than by fetching a record and comparing
-afterwards. A document belonging to someone else is simply not found, and returns
-the same 404 as an id that never existed — so the API cannot be used to probe
-which ids are real.
+Context-grounded AI answers
 
-## Security model
+Page-level document citations
 
-Passwords are hashed with bcrypt and never stored, logged, or returned in plain
-text. The register and login endpoints return identical errors for an unknown
-email and a wrong password, and the unknown-email path performs an equivalent
-bcrypt computation so response timing does not reveal which addresses have
-accounts.
+Secure document ownership checks
 
-The Gemini API key stays on the backend; the frontend never sees it. Error
-responses carry a short human-readable message only — stack traces, driver
-internals, and file paths are logged server-side and never sent to the client.
+Protection against cross-user data access
 
-Uploads are validated by extension, by size while streaming (so an oversized file
-cannot exhaust memory), and by PDF magic bytes, so a renamed executable is
-rejected. Stored filenames are UUIDs under a per-user directory, which makes path
-traversal structurally impossible; the original name is sanitised for display only.
+The original RAG pipeline remains the foundation of the system:
 
-In production the server **refuses to start** if `JWT_SECRET` is unset. A known
-default signing key would let anyone mint a valid token for any user id, which
-would defeat every ownership check at once.
+PDF → PyPDFLoader → CharacterTextSplitter → HuggingFaceEmbeddings → FAISS → Similarity Search → Gemini → Grounded Answer + Citations
 
-## Prerequisites
+How User Isolation Works
 
-- Node.js and npm
-- Python 3.10+
-- MongoDB running locally (or a connection string to a hosted instance)
-- A Gemini API key from Google AI Studio
+One of the most important design decisions in QueryNest is how user data is isolated.
 
-## Setup
+Instead of maintaining one shared FAISS index and relying on metadata filtering during retrieval, QueryNest creates a separate FAISS index for each user:
 
-**1. Clone and enter the project**
+faiss_store/
 
-```bash
-git clone https://github.com/devcom33/Chat-with-Your-Documents.git
-cd Chat-with-Your-Documents
-```
+├── user_1/
 
-**2. Create `.env` in the project root**
+├── user_2/
 
-```env
+└── user_3/
+
+The authenticated user's ID comes from the verified JWT, rather than from a request body or URL parameter.
+
+MongoDB ownership
+
+MongoDB queries also enforce ownership directly using both the resource ID and authenticated user ID.
+
+Security Model
+
+Password Security
+
+Passwords are hashed using bcrypt.
+
+Plain-text passwords are never stored.
+
+Passwords are never returned through API responses.
+
+Login errors do not reveal whether an email address exists.
+
+JWT Authentication
+
+Authenticated API requests require:
+
+Authorization: Bearer <token>
+
+Gemini API Protection
+
+The Gemini API key remains on the backend. The frontend never receives the Gemini API key.
+
+Error Handling
+
+Client-facing errors contain short, human-readable messages. Internal details such as stack traces, database driver information, server file paths, and sensitive configuration are not returned to the frontend.
+
+Secure File Uploads
+
+Uploaded PDFs are validated using:
+
+File extension validation
+
+File-size validation while streaming
+
+PDF magic-byte validation
+
+JWT Secret
+
+In production environments, QueryNest requires a properly configured JWT_SECRET. The server refuses to start when a secure signing secret is missing.
+
+RAG Pipeline
+
+QueryNest uses Retrieval-Augmented Generation to answer questions using information from uploaded documents.
+
+PDF Document
+
+↓
+
+PyPDFLoader
+
+↓
+
+CharacterTextSplitter
+
+├── Chunk Size: 1000
+
+└── Chunk Overlap: 200
+
+↓
+
+HuggingFace Embeddings
+
+└── all-mpnet-base-v2
+
+↓
+
+FAISS Vector Store
+
+↓
+
+Similarity Search
+
+↓
+
+Relevant Document Chunks
+
+↓
+
+Gemini
+
+↓
+
+Grounded Answer
+
+↓
+
+Source / Page Citations
+
+Conversation Support
+
+QueryNest supports persistent conversations rather than treating every question as an isolated request.
+
+Users can:
+
+Start multiple conversations
+
+Continue previous conversations
+
+Ask follow-up questions
+
+Retrieve conversation history
+
+Log out and return later
+
+Continue working with their uploaded documents
+
+Prerequisites
+
+Node.js
+
+npm
+
+Python 3.10+
+
+MongoDB
+
+Gemini API key from Google AI Studio
+
+Getting Started
+
+1. Clone the repository
+
+git clone https://github.com/YOUR_USERNAME/QueryNest.git
+
+cd QueryNest
+
+2. Create the environment file
+
 GEMINI_API_KEY=your_gemini_api_key_here
+
 MONGODB_URI=mongodb://localhost:27017
+
 MONGODB_DB_NAME=chatdoc
-JWT_SECRET=generate_a_long_random_string_here
+
+JWT_SECRET=your_long_random_secret
+
 APP_ENV=development
-```
 
-Generate a real secret with `python -c "import secrets; print(secrets.token_urlsafe(48))"`.
-Never commit `.env`.
+Generate a secure JWT secret with:
 
-Only `GEMINI_API_KEY` is strictly required to start in development — the rest have
-working local defaults. In any non-development `APP_ENV`, `JWT_SECRET` becomes
-mandatory and the server refuses to boot without it. Other useful overrides:
-`RETRIEVAL_K` (default 5), `MAX_UPLOAD_MB` (default 20), `PASSWORD_MIN_LENGTH`
-(default 8), `GEMINI_MODEL`, and `CORS_ORIGINS`.
+python -c "import secrets; print(secrets.token_urlsafe(48))"
 
-**3. Run the backend**
+Never commit .env to GitHub.
 
-```bash
+Running the Backend
+
 python -m venv venv
-venv\Scripts\activate        # macOS/Linux: source venv/bin/activate
+
+venv\Scripts\activate
+
 pip install -r requirements.txt
+
 python backend_chatdoc.py
-```
 
-The API runs at `http://localhost:8000`, with interactive docs at `/docs`.
+The backend runs at:
 
-**4. Run the frontend**
+http://localhost:8000
 
-```bash
+FastAPI documentation:
+
+http://localhost:8000/docs
+
+Running the Frontend
+
 cd front-chatdoc
+
 npm install
+
 npm run dev
-```
 
-Open the Vite URL, normally `http://localhost:5173`.
+The frontend normally runs at:
 
-## Verifying it works
+http://localhost:5173
 
-`scripts/verify_e2e.py` exercises the full flow against a running server and then
-tries to break the isolation boundary from a second account. It uses only the
-Python standard library, creates two throwaway users, and cleans up after itself.
+Verifying the Application
 
-```bash
 python scripts/verify_e2e.py
 
-# if you are offline or out of Gemini quota, skip the answer-generation checks:
+If Gemini is unavailable:
+
 python scripts/verify_e2e.py --skip-rag
-```
 
-It walks the flow end to end — register, login, upload, ask, check citations,
-start a second chat, continue the first, log out, log back in, confirm chat
-history and documents survived — and then verifies that user B cannot read,
-write to, or delete any of user A's conversations or documents, that A's data is
-absent from B's lists, and that asking B the exact question A's document answers
-does not leak A's content into B's answer. It also checks that error responses
-contain no tracebacks, internal paths, or key material. Exit code is 0 only if
-every check passes.
+The verification script checks registration, login, PDF upload, retrieval, question answering, citations, conversations, logout, session restoration, and multi-user isolation.
 
-## Project structure
+Project Structure
 
-```
-app/
-  core/        config, security (bcrypt + JWT), error handling, dependencies
-  db/          MongoDB connection and index setup
-  models/      Pydantic request/response schemas — the input-validation layer
-  rag/         PDF -> chunks -> embeddings -> FAISS (the original pipeline)
-  services/    Gemini integration and conversational RAG
-  routers/     auth, users, documents, conversations
-backend_chatdoc.py   entrypoint (unchanged command: python backend_chatdoc.py)
-scripts/             end-to-end and isolation verification
-front-chatdoc/src/
-  api/         axios client with token interceptor
-  context/     auth and conversation state
-  components/  sidebar, upload, chat surface, citations, shared UI
-  layouts/     app shell and auth shell
-  pages/       dashboard, documents, chat, profile, login, register
-```
+QueryNest/
 
-## API
+├── app/
 
-All routes except register and login require `Authorization: Bearer <token>`.
+│   ├── core/
 
-| Method | Path | Purpose |
-| --- | --- | --- |
-| POST | `/api/auth/register` | Create an account |
-| POST | `/api/auth/login` | Exchange credentials for a token |
-| POST | `/api/auth/logout` | Explicit sign-out |
-| GET | `/api/auth/me` | Restore the current session |
-| GET/PUT | `/api/users/profile` | Read or rename the profile |
-| POST | `/api/documents/upload` | Upload and index a PDF |
-| GET | `/api/documents` | List your documents |
-| DELETE | `/api/documents/{id}` | Delete a document and its vectors |
-| POST | `/api/conversations` | Start a chat |
-| GET | `/api/conversations` | List your chats |
-| GET | `/api/conversations/{id}` | Chat with its full message history |
-| GET | `/api/conversations/{id}/messages` | Messages only |
-| POST | `/api/conversations/{id}/messages` | Ask a question, get a cited answer |
-| DELETE | `/api/conversations/{id}` | Delete a chat |
+│   ├── db/
 
-## Technology
+│   ├── models/
 
-React 19, Vite, styled-components, react-router-dom, react-dropzone, axios, and
-react-markdown on the frontend. FastAPI, Motor (async MongoDB), bcrypt, PyJWT,
-LangChain, FAISS, Hugging Face sentence-transformers, and the Google Gemini API
-on the backend.
+│   ├── rag/
 
-## Note on migrating from the single-user version
+│   ├── services/
 
-Vectors in the old `faiss_vector_store/` directory have no owner and are no longer
-searched. Re-upload those PDFs to make them queryable again. The old directory is
-left in place rather than deleted, so nothing is destroyed and the change is
-reversible.
+│   └── routers/
+
+├── faiss_store/
+
+├── scripts/
+
+├── front-chatdoc/
+
+├── backend_chatdoc.py
+
+├── requirements.txt
+
+├── .env.example
+
+└── README.md
+
+API Endpoints
+
+POST   /api/auth/register — Create a new account
+
+POST   /api/auth/login — Authenticate a user
+
+POST   /api/auth/logout — Sign out
+
+GET    /api/auth/me — Restore the current session
+
+GET    /api/users/profile — Get the current profile
+
+PUT    /api/users/profile — Update the profile
+
+POST   /api/documents/upload — Upload and index a PDF
+
+GET    /api/documents — List the user's documents
+
+DELETE /api/documents/{id} — Delete a document
+
+POST   /api/conversations — Start a conversation
+
+GET    /api/conversations — List conversations
+
+GET    /api/conversations/{id} — Get conversation history
+
+GET    /api/conversations/{id}/messages — Get messages
+
+POST   /api/conversations/{id}/messages — Ask a document question
+
+DELETE /api/conversations/{id} — Delete a conversation
+
+Technology Stack
+
+Frontend
+
+React 19
+
+Vite
+
+React Router
+
+Styled Components
+
+Axios
+
+React Dropzone
+
+React Markdown
+
+Backend
+
+Python
+
+FastAPI
+
+Motor
+
+MongoDB
+
+bcrypt
+
+PyJWT
+
+AI / RAG
+
+Google Gemini API
+
+LangChain
+
+FAISS
+
+Hugging Face Embeddings
+
+Sentence Transformers
+
+PyPDFLoader
+
+CharacterTextSplitter
+
+Key Features
+
+🔐 Authentication
+
+Secure registration, login, logout, and JWT-based session management.
+
+📄 Personal Document Library
+
+Each user can upload and manage their own PDF documents.
+
+🧠 AI-Powered Q&A
+
+Ask natural-language questions about uploaded documents.
+
+🔎 Semantic Retrieval
+
+Relevant document chunks are retrieved using embeddings and FAISS similarity search.
+
+💬 Persistent Conversations
+
+Users can create multiple chats and continue previous conversations.
+
+📑 Page Citations
+
+Answers can reference the document and page from which supporting information was retrieved.
+
+👥 Multi-User Isolation
+
+Documents, vectors, and conversations are isolated between users.
+
+🛡️ Secure File Handling
+
+PDF uploads are validated for type and size before processing.
+
+Migration from the Original Single-User Version
+
+The original application used a global vector store:
+
+faiss_vector_store/
+
+Those vectors were created before user ownership was introduced and therefore do not contain user ownership information.
+
+QueryNest does not search those legacy vectors.
+
+To make the documents available in QueryNest:
+
+1. Upload the PDFs again.
+
+2. QueryNest creates vectors under the authenticated user's index.
+
+3. The documents can then be searched normally.
+
+Security Architecture
+
+React Client
+
+     │
+
+     │ JWT Request
+
+     ▼
+
+FastAPI Backend
+
+     │
+
+     │ Verify authenticated user
+
+     │
+
+     ├───────────────┐
+
+     ▼               ▼
+
+  MongoDB       User FAISS Index
+
+                    │
+
+                    ▼
+
+              Relevant Chunks
+
+                    │
+
+                    ▼
+
+                  Gemini
+
+                    │
+
+                    ▼
+
+              Grounded Answer
+
+                    │
+
+                    ▼
+
+              React Interface
+
+Future Improvements
+
+Streaming AI responses
+
+Support for additional document formats
+
+Cloud object storage
+
+Hosted vector databases
+
+Background document processing
+
+Advanced retrieval and reranking
+
+Document-level permissions
+
+Conversation search
+
+Production deployment
+
+Monitoring and observability
