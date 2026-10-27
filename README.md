@@ -190,6 +190,10 @@ JWT_SECRET=your_long_random_secret
 
 APP_ENV=development
 
+# Comma-separated frontend origins allowed by the backend.
+# Set this in Render's backend environment variables as well.
+CORS_ORIGINS=http://localhost:5173,https://querynest-1-uwj4.onrender.com
+
 Generate a secure JWT secret with:
 
 python -c "import secrets; print(secrets.token_urlsafe(48))"
