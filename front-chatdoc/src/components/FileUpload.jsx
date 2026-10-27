@@ -107,7 +107,7 @@ export default function FileUpload({ onUploaded }) {
           }
         });
 
-        setState({ stage: 'success', message: `${result.document.filename} is ready` });
+        setState({ stage: 'success', message: `${result.document.filename} uploaded; processing in the background` });
         onUploaded?.(result.document);
 
         // Return to the idle prompt so another file can be added.

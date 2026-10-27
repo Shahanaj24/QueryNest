@@ -328,11 +328,17 @@ export default function Documents() {
     load();
   }, [load]);
 
+  useEffect(() => {
+    if (!documents.some((document) => document.status === 'processing')) return undefined;
+    const timer = window.setInterval(load, 3000);
+    return () => window.clearInterval(timer);
+  }, [documents, load]);
+
   // Existing upload logic preserved.
   const handleUploaded = useCallback(
     (uploaded) => {
       setError('');
-      setNotice(`${uploaded.filename} is ready to query.`);
+      setNotice(`${uploaded.filename} uploaded. It will be searchable when processing finishes.`);
       load();
     },
     [load],

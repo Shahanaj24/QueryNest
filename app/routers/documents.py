@@ -17,7 +17,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, Depends, File, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, Depends, File, UploadFile, status
 from fastapi.concurrency import run_in_threadpool
 from pymongo.errors import PyMongoError
 
@@ -49,8 +49,49 @@ def _safe_filename(raw: str) -> str:
     return cleaned[:120]
 
 
+async def _process_document(
+    *,
+    document_id: str,
+    user_id: str,
+    filename: str,
+    file_path: str,
+) -> None:
+    """Process an upload after the HTTP response, without blocking the user."""
+    database = get_database()
+
+    try:
+        index_result = await run_in_threadpool(
+            pipeline.index_document,
+            user_id=user_id,
+            document_id=document_id,
+            filename=filename,
+            file_path=file_path,
+        )
+        await database.documents.update_one(
+            {"_id": to_object_id(document_id, "The document was not found.")},
+            {
+                "$set": {
+                    "status": "processed",
+                    "chunkCount": index_result["chunkCount"],
+                    "pageCount": index_result["pageCount"],
+                    "chunkIds": index_result["chunkIds"],
+                    "processedAt": datetime.now(timezone.utc),
+                }
+            },
+        )
+    except Exception as exc:
+        detail = getattr(exc, "detail", "This document could not be processed.")
+        logger.error("Document processing failed for %s: %s", document_id, exc)
+        Path(file_path).unlink(missing_ok=True)
+        await database.documents.update_one(
+            {"_id": to_object_id(document_id, "The document was not found.")},
+            {"$set": {"status": "failed", "error": str(detail)}},
+        )
+
+
 @router.post("/upload", response_model=UploadResponse, status_code=status.HTTP_201_CREATED)
 async def upload_document(
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     user: dict = Depends(get_current_user),
 ) -> Any:
@@ -118,48 +159,17 @@ async def upload_document(
 
     document_id = str(result.inserted_id)
 
-    try:
-        # Embedding is CPU-bound and blocking: run it off the event loop so the
-        # server stays responsive during a large upload.
-        index_result = await run_in_threadpool(
-            pipeline.index_document,
-            user_id=user_id,
-            document_id=document_id,
-            filename=display_name,
-            file_path=str(stored_path),
-        )
-    except Exception as exc:
-        # Processing failed: mark the record and clean up the orphaned file so
-        # a failed upload never leaves an unusable document listed as ready.
-        detail = getattr(exc, "detail", "This document could not be processed.")
-        await database.documents.update_one(
-            {"_id": result.inserted_id},
-            {"$set": {"status": "failed", "error": str(detail)}},
-        )
-        stored_path.unlink(missing_ok=True)
-        raise
-
-    try:
-        await database.documents.update_one(
-            {"_id": result.inserted_id},
-            {
-                "$set": {
-                    "status": "processed",
-                    "chunkCount": index_result["chunkCount"],
-                    "pageCount": index_result["pageCount"],
-                    "chunkIds": index_result["chunkIds"],
-                    "processedAt": datetime.now(timezone.utc),
-                }
-            },
-        )
-    except PyMongoError as exc:
-        raise mongo_guard(exc, "finish saving your document")
-
-    stored = await database.documents.find_one({"_id": result.inserted_id})
+    background_tasks.add_task(
+        _process_document,
+        document_id=document_id,
+        user_id=user_id,
+        filename=display_name,
+        file_path=str(stored_path),
+    )
 
     return {
-        "document": serialise_document(stored),
-        "message": "Document uploaded and ready.",
+        "document": serialise_document(document_record | {"_id": result.inserted_id}),
+        "message": "Document uploaded and processing has started.",
     }
 
 

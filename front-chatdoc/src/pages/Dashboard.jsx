@@ -894,6 +894,12 @@ export default function Dashboard() {
     loadDocuments();
   }, [loadDocuments]);
 
+  useEffect(() => {
+    if (!documents.some((document) => document.status === 'processing')) return undefined;
+    const timer = window.setInterval(loadDocuments, 3000);
+    return () => window.clearInterval(timer);
+  }, [documents, loadDocuments]);
+
   /* =========================================================
      QUICK QUESTION
      Existing logic preserved.
