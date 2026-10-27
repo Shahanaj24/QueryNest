@@ -45,13 +45,16 @@ GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
 # Embeddings / RAG
 # ----------------------------------------------------------------------
 
-# Unchanged from the original project. Changing this invalidates existing
-# indexes, because vector dimensionality is model specific.
-EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-mpnet-base-v2")
+# MiniLM is substantially smaller and faster on CPU-only Render instances.
+# Changing this invalidates existing indexes because vector dimensions differ.
+EMBEDDING_MODEL = os.getenv(
+    "EMBEDDING_MODEL",
+    "sentence-transformers/all-MiniLM-L6-v2",
+)
 
-# Unchanged from the original project (CharacterTextSplitter(1000, 200)).
-CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "1000"))
-CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "200"))
+# Fewer, slightly larger chunks reduce PDF processing and prompt overhead.
+CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "1200"))
+CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "150"))
 
 # The original used k=3. Raised to 5 to give Gemini more grounding context,
 # which measurably reduces "I need more context" style non-answers.

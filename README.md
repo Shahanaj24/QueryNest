@@ -254,6 +254,20 @@ Register: https://your-frontend-domain.onrender.com/#/register
 The hash (`#`) is required because static hosts do not serve React routes such
 as `/login` as physical files.
 
+Performance notes
+
+The backend uses the CPU-friendly `sentence-transformers/all-MiniLM-L6-v2`
+embedding model by default. It is much faster and smaller than the original
+`all-mpnet-base-v2` model on a small Render instance. Changing the embedding
+model changes vector dimensions, so after deploying this change, delete and
+re-upload documents that were indexed with the old model.
+
+The first PDF processed after a cold start still downloads and loads the
+embedding model. Subsequent PDFs and searches reuse the in-memory model. A
+production deployment with several users should run document indexing in a
+separate worker/queue and use persistent object/vector storage; a single small
+web instance cannot provide predictable embedding latency for concurrent users.
+
 Verifying the Application
 
 python scripts/verify_e2e.py

@@ -10,6 +10,7 @@ indexing logic is unchanged; it now runs against the caller's own store and is
 recorded in MongoDB.
 """
 
+import asyncio
 import logging
 import re
 import uuid
@@ -35,6 +36,7 @@ router = APIRouter(prefix="/api/documents", tags=["documents"])
 _SAFE_NAME = re.compile(r"[^A-Za-z0-9._-]+")
 # A PDF must begin with this signature; checked so a renamed .exe is rejected.
 _PDF_MAGIC = b"%PDF-"
+_processing_slot = asyncio.Semaphore(1)
 
 
 def _safe_filename(raw: str) -> str:
@@ -60,13 +62,16 @@ async def _process_document(
     database = get_database()
 
     try:
-        index_result = await run_in_threadpool(
-            pipeline.index_document,
-            user_id=user_id,
-            document_id=document_id,
-            filename=filename,
-            file_path=file_path,
-        )
+        # A CPU-only instance cannot embed several PDFs concurrently without
+        # starving chat requests and multiplying memory use.
+        async with _processing_slot:
+            index_result = await run_in_threadpool(
+                pipeline.index_document,
+                user_id=user_id,
+                document_id=document_id,
+                filename=filename,
+                file_path=file_path,
+            )
         await database.documents.update_one(
             {"_id": to_object_id(document_id, "The document was not found.")},
             {
