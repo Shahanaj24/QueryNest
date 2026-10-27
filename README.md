@@ -232,6 +232,28 @@ The frontend normally runs at:
 
 http://localhost:5173
 
+Deploying the Frontend to Render
+
+Create the frontend as a Render Static Site with:
+
+Build command:
+
+cd front-chatdoc && npm install && npm run build
+
+Publish directory:
+
+front-chatdoc/dist
+
+The frontend uses hash-based routing so it works on Render Static Sites without
+a Redirects/Rewrites configuration. Use these URLs when opening routes directly:
+
+Login: https://your-frontend-domain.onrender.com/#/login
+
+Register: https://your-frontend-domain.onrender.com/#/register
+
+The hash (`#`) is required because static hosts do not serve React routes such
+as `/login` as physical files.
+
 Verifying the Application
 
 python scripts/verify_e2e.py
