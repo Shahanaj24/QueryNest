@@ -59,8 +59,16 @@ def answer_for_user(
     """
     recent = history[-config.HISTORY_WINDOW :] if history else []
 
-    # Resolve pronouns so follow-up questions retrieve the right chunks.
-    search_query = gemini.condense_question(question, recent) if recent else question
+    # Avoid a second Gemini request for ordinary questions. Only rewrite
+    # follow-ups that contain a reference needing the previous turn.
+    follow_up_markers = (
+        " it", " that", " this", " these", " those", " above", "below",
+        "why is", "how does", "what about",
+    )
+    needs_rewrite = recent and any(
+        marker in f" {question.lower()}" for marker in follow_up_markers
+    )
+    search_query = gemini.condense_question(question, recent) if needs_rewrite else question
 
     if search_query != question:
         logger.info("Condensed follow-up for retrieval: %r -> %r", question, search_query)

@@ -38,7 +38,7 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 # Preserved from the original code (backend_chatdoc.py line 327).
 # Exposed as an env var so the model can be changed without editing code.
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
 
 
 # ----------------------------------------------------------------------
@@ -55,12 +55,12 @@ CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "200"))
 
 # The original used k=3. Raised to 5 to give Gemini more grounding context,
 # which measurably reduces "I need more context" style non-answers.
-RETRIEVAL_K = int(os.getenv("RETRIEVAL_K", "5"))
+RETRIEVAL_K = int(os.getenv("RETRIEVAL_K", "3"))
 
 # How many recent messages of a conversation are considered for follow-up
 # question rewriting and passed to Gemini. Bounded so prompts cannot grow
 # without limit as a conversation gets long.
-HISTORY_WINDOW = int(os.getenv("HISTORY_WINDOW", "6"))
+HISTORY_WINDOW = int(os.getenv("HISTORY_WINDOW", "4"))
 
 # Maximum number of per-user FAISS indexes kept in memory at once.
 VECTOR_CACHE_SIZE = int(os.getenv("VECTOR_CACHE_SIZE", "8"))

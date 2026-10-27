@@ -32,7 +32,7 @@ from app.models.schemas import (
     serialise_conversation,
     serialise_message,
 )
-from app.services import chat, gemini
+from app.services import chat
 
 logger = logging.getLogger("chatdoc")
 
@@ -244,10 +244,12 @@ async def send_message(
     except PyMongoError as exc:
         raise mongo_guard(exc, "save the answer")
 
-    # Title the conversation from its first question, like ChatGPT.
+    # Title the conversation locally so the first answer does not wait for a
+    # second Gemini request. A title is cosmetic and must not delay chat.
     title = conversation.get("title", DEFAULT_TITLE)
     if not history and title == DEFAULT_TITLE:
-        title = await run_in_threadpool(gemini.generate_title, payload.content)
+        title = payload.content.strip()
+        title = title[:47].rstrip() + "..." if len(title) > 50 else title
 
     try:
         await database.conversations.update_one(
