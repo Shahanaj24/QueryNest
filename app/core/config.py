@@ -108,13 +108,18 @@ ALLOWED_EXTENSIONS = {".pdf"}
 # CORS
 # ----------------------------------------------------------------------
 
-# Preserved from the original project, with Vite's alternate port added.
-CORS_ORIGINS = [
+# Keep safe local and deployed frontend origins available even when Render
+# defines CORS_ORIGINS for an environment-specific override.
+DEFAULT_CORS_ORIGINS = {
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5174",
+    "https://querynest-1-uwj4.onrender.com",
+}
+CONFIGURED_CORS_ORIGINS = {
     origin.strip()
-    for origin in os.getenv(
-        "CORS_ORIGINS",
-        "http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,"
-        "http://127.0.0.1:5174,https://querynest-1-uwj4.onrender.com",
-    ).split(",")
+    for origin in os.getenv("CORS_ORIGINS", "").split(",")
     if origin.strip()
-]
+}
+CORS_ORIGINS = sorted(DEFAULT_CORS_ORIGINS | CONFIGURED_CORS_ORIGINS)
