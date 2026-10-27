@@ -1067,7 +1067,7 @@ export default function Dashboard() {
 
               <AskButton
                 type="button"
-                onClick={(event) => {
+                onClick={() => {
                   handleAsk({
                     preventDefault: () => {},
                   });

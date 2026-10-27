@@ -24,7 +24,6 @@ import {
 } from '../api/client';
 
 import { useConversations } from '../context/ConversationContext';
-import { theme } from '../theme';
 
 /* =========================================================
    PAGE

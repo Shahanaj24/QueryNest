@@ -208,11 +208,13 @@ python backend_chatdoc.py
 
 The backend runs at:
 
-http://localhost:8000
+https://querynest-rgjj.onrender.com
+
 
 FastAPI documentation:
 
-http://localhost:8000/docs
+https://querynest-rgjj.onrender.com
+/docs
 
 Running the Frontend
 

@@ -17,7 +17,6 @@ import {
   Spinner,
 } from '../components/ui';
 import { documentApi, errorMessage } from '../api/client';
-import { theme } from '../theme';
 import { formatBytes, formatDateTime } from '../utils/format';
 
 const Scroll = styled.div`

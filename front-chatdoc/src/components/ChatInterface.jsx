@@ -22,7 +22,6 @@ import styled from 'styled-components';
 import Markdown from './Markdown';
 import Sources from './Sources';
 import { Spinner } from './ui';
-import { theme } from '../theme';
 
 /* =========================================================
    MAIN WRAPPER

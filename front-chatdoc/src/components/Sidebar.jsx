@@ -13,7 +13,6 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import { useConversations } from '../context/ConversationContext';
-import { theme } from '../theme';
 import { Alert, Spinner } from './ui';
 
 /* =========================================================

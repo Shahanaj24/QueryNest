@@ -16,12 +16,12 @@ export const tokenStore = {
   clear: () => localStorage.removeItem(TOKEN_KEY),
 };
 
+
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
-  // Generous: embedding a PDF and calling Gemini can take a while. The original
-  // 10s timeout caused spurious "could not get response" errors.
+  baseURL: import.meta.env.VITE_API_URL || 'https://querynest-rgjj.onrender.com',
   timeout: 120000,
 });
+
 
 // Attach the bearer token to every request.
 api.interceptors.request.use((config) => {
